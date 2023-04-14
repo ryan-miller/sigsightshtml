@@ -1,0 +1,29 @@
+a {
+    text-decoration: none;
+    color: white;
+}
+h2 a, li a {
+    text-decoration: none;
+    color: black;
+}
+ul li {
+    list-style-type: none;
+}
+.numbers {
+    text-align: right;
+}
+.row { /* keep section header, graph, text, and tables together when pringting. do not page break between sections */
+    page-break-inside: avoid;
+}
+.nextsite { /* page break between end of previous site/section and start of first/next site*/
+    page-break-before: always;
+}
+
+@media print {
+    .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {
+        float: left;
+    }
+    .col-6 {
+        width: 90%;
+    }
+}
