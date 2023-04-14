@@ -1,3 +1,17 @@
+function attackChartDataPrep(d) {
+
+    var v = []
+    var l = []
+
+    for (var row in d) {
+        v.push(d[row].requestCount)
+        l.push(d[row].countryName)
+    }
+
+    return {values: v, labels: l}
+
+}
+
 function compressAttackData(d) {
     var compressedAttackData = []
     var site

@@ -14,11 +14,13 @@
     <script>
 
         function showAttackChart(d) {
+
+            newData = attackChartDataPrep(d);
             var data = [{
-                values: [6835283, 692194, 238587],
-                labels: ['United States', 'Private Network', 'Italy'],
+                values: newData.values,
+                labels: newData.labels,
                 type: 'pie',
-                textinfo: "label+percent"
+                textinfo: "label"
             }];
 
             var layout = {
@@ -29,24 +31,6 @@
             var config = {responsive: true}
 
             Plotly.newPlot('globalAttackChartContainer', data, layout, config);
-
-
-
-
-            var chart = new CanvasJS.Chart("chartContainer", {
-                theme: "light2",
-                animationEnabled: false,
-                data: [{
-                    type: "pie",
-                    startAngle: 90,
-                    toolTipContent: "<b>{countryName}</b>: {requestCount}",
-                    legendText: "{countryCode}",
-                    indexLabelFontSize: 12,
-                    indexLabel: "{countryName}",
-                    dataPoints: d
-                }]
-            });
-            chart.render();
         }
 
         function showAllRequestsChart(d) {
@@ -62,60 +46,6 @@
                     totalBlockedData = meltRequestData(d[type]);
                 }
             }
-
-            var chart = new CanvasJS.Chart("allRequestsChart", {
-                axisY:{
-                    title: "Attack and Blocked Requests",
-                    includeZero: false,
-                    suffix: "M",
-                    labelFontSize: 12,
-                    titleFontSize: 16
-                },
-                axisY2:{
-                    title: "All Requests",
-                    includeZero: false,
-                    suffix: "M",
-                    labelFontSize: 12,
-                    titleFontSize: 16
-                },
-                axisX: {
-                    valueFormatString: "MM/DD",
-                    labelFontSize: 12,
-                    titleFontSize: 16
-                },
-                toolTip: {
-                    shared: true
-                },
-                legend: {
-                    fontSize: 16
-                },
-                data: [{
-                    type:"line",
-                    axisYType: "secondary",
-                    name: "Total Requests",
-                    axisY2Index: 0,
-                    showInLegend: true,
-                    markerSize: 0,
-                    dataPoints: totalRequestsData
-                },
-                {
-                    type: "line",
-                    name: "Attack Requests",
-                    showInLegend: true,
-                    axisYIndex: 1,
-                    markerSize: 0,
-                    dataPoints: totalAttacksData
-                },
-                {
-                    type: "line",
-                    name: "Blocked Requests",
-                    showInLegend: true,
-                    axisYIndex: 1,
-                    markerSize: 0,
-                    dataPoints: totalBlockedData
-                }]
-            });
-            chart.render();
 
         }
 
@@ -210,7 +140,6 @@
     </script>
   </head>
   <body>
-    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 
         <div class="container-fluid">
             <div class="row">
@@ -242,7 +171,6 @@
                         <h2>Global Attack Sources</h2>
 
                         <p id="globalAttackChartContainer" style="height: 800px; width: 100%;"></p>
-                        <p id="chartContainer" style="height: 800px; width: 100%;"></p>
                         <p>
                             <table class="table">
                                 <thead>
