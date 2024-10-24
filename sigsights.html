@@ -363,19 +363,18 @@
             });
         }
 
-        function fetchSitesData(corp) {
-            $.ajax({
-                url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/sites`,
-                method: "GET",
-                headers: HEADERS
-            }).done(function(response) {
-                $.each(response.data, function(i, obj) {
-                    const siteDisplayName = obj.displayName;
-                    const siteName = obj.name.replaceAll(".", "");
-                    $("#toc-list").append(`<li id="${siteName}_li"><a href="#${siteName}">${siteDisplayName}</a></li>`);
-                    createSiteDiv(siteName, siteDisplayName);
-                    fetchSiteDetails(corp, siteName);
-                });
+        function stubSiteData(sites) {
+            sites.forEach(site => {
+                const { name, displayName } = site;
+
+                $("#toc-list").append(`
+                    <li id="${name}_li">
+                        <a href="#${name}">${displayName}</a>
+                    </li>
+                `);
+
+                createSiteDiv(name, displayName);
+                fetchSiteDetails(corp, name);
             });
         }
 
@@ -424,6 +423,9 @@
 
                 const attackData = compressAttackData(response.data);
                 const filteredAttackData = attackData.filter(row => row.countryCode !== 'private');
+                const sitesWithData = response.data.filter(row => row.totalCount > 0);
+                
+                stubSiteData(sitesWithData);
 
                 $.each(filteredAttackData, function(i, row) {
                     $("#attacks-table").append(`<tr><td>${row.countryName}</td><td>${row.countryCode}</td><td class="numbers">${row.requestCount.toLocaleString()}</td></tr>`);
@@ -431,13 +433,7 @@
 
                 showAttackChart(filteredAttackData);
                 showSiteAttackCharts(response.data);
-
-                $.each(response.data, function(i, row) {
-                    if (row.topAttackSources.length === 0) {
-                        $(`#${row.name}_li`).remove();
-                        $(`#${row.name}_div`).remove();
-                    }
-                });
+              
             });
         // Fetch time series and signals
             $.when(
@@ -555,7 +551,7 @@
 
         $("document").ready(function(){
 
-            const corp =  "ebay";
+            corp =  "ebay";
             HEADERS = {
                 "Content-Type": "application/json",
                 "x-api-user": "rmiller+ebay@fastly.com",
@@ -569,10 +565,11 @@
             $('#sso-settings-link').attr('href', 'https://dashboard.signalsciences.net/corps/' + corp + '/settings');
 
             fetchCorpData(corp);
-            fetchSitesData(corp);
+            //fetchSitesData(corp);
             fetchAttackReports(corp, minus90d, datenow);
             fetchUserData(corp);
             fetchAllowRules(corp);
+
         });
             
     </script>
@@ -748,10 +745,7 @@
                 <div class="col"></div>
             </div>
 
-            <div id="sites">
-
-
-            </div>
+            <div id="sites"></div>
 
         </div>
 
