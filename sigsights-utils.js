@@ -1,57 +1,53 @@
 function defaultChartLayout() {
     return {
-        fontsize: 12,
-        margin: {t: 0, b: 0, b:0}
+        font: { size: 12 }, // Use 'font' for font size
+        margin: { t: 0, b: 0 } // Fixed duplicate 'b' property
     };
 }
 
 function defaultStackBarChartLayout() {
-    def = defaultChartLayout();
-    def.barmode = 'stack';
-    return def;
+    const layout = defaultChartLayout(); // Use const for better scoping
+    layout.barmode = 'stack'; // Set bar mode to stack
+    return layout;
 }
 
 function defaultGroupBarChartLayout() {
-    def = defaultChartLayout();
-    def.barmode = 'group';
-    return def;
+    const layout = defaultChartLayout();
+    layout.barmode = 'group';
+    return layout;
 }
 
 function defaultChartOptions() {
-   return {responsive: true, displayModeBar: false};
+   return {
+        responsive: true, 
+        displayModeBar: false
+    };
 }
 
-function getUniqueTopSites(d) {
-    var uniqueSites = [];
+function getUniqueTopSites(data) {
+    const uniqueSites = new Set(); // Use Set for unique values
 
-    for (row in d) {
-        for (site in d[row].topSites) {
-            var siteName = d[row].topSites[site].name;
-            if (!uniqueSites.includes(siteName)) {
-                uniqueSites.push(siteName);
-            }
+    for (const row of data) {
+        for (const site of row.topSites) {
+            uniqueSites.add(site.name); // Add site name to Set
         }
     }
 
-    return uniqueSites;
+    return Array.from(uniqueSites); // Convert Set back to array
 }
 
 function isCveSignal(signal) {
-    return (signal.substring(0,3) == 'CVE'); 
+    return signal.startsWith('CVE');
 }
 
 function isLoginOrRegistrationSignal(signal) {
-    if (signal.substring(0,5) == 'LOGIN' || signal.substring(0,12) == 'REGISTRATION') {
-        return true;
-    }
-    return false;
+    return signal.startsWith('LOGIN') || signal.startsWith('REGISTRATION');
 }
 
 function isBadAnomalySignal(signal) {
-
-    var badAnomalies = [
+    const badAnomalies = new Set([
         'JSON-ERROR',
-        'BODY-PARSER-EVASTION',
+        'BODY-PARSER-EVASION',
         'DOUBLEENCODING',
         'NOTUTF8',
         'XML-ERROR',
@@ -60,248 +56,154 @@ function isBadAnomalySignal(signal) {
         'NULLBYTE',
         'MALFORMED-DATA',
         'ABNORMALPATH'
-    ]
+    ]);
 
-    return badAnomalies.includes(signal);
-
+    return badAnomalies.has(signal);
 }
 
 function showCorpSignalsBySiteChart(d) {
+    const uniqueSites = getUniqueTopSites(d);
+    const data = [];
 
-    var uniqueSites = getUniqueTopSites(d);
+    uniqueSites.forEach(siteName => {
+        const x = [];
+        const y = [];
 
-    var data = []
-
-    for (uniqueSite in uniqueSites) {
-        var x = [];
-        var y = [];
-
-        for (row in d) {
-            for (site in d[row].topSites) {
-                if (d[row].topSites[site].name == uniqueSites[uniqueSite]) {
-                    x.push(d[row].name)
-                    y.push(d[row].topSites[site].count)
+        d.forEach(row => {
+            row.topSites.forEach(site => {
+                if (site.name === siteName) {
+                    x.push(row.name);
+                    y.push(site.count);
                 }
-            }
-        }
-        data.push({'x': x, 'y': y, 'name': uniqueSites[uniqueSite], 'type': 'bar'});
+            });
+        });
 
-    }
+        data.push({ x, y, name: siteName, type: 'bar' });
+    });
 
     Plotly.newPlot('corpSignalsBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
-
 }
 
 function filterData(data, field, filter) {
-    var filteredData = [];
-    
-    for (var row in data) {
-        var fieldName = data[row][field];
-        if (filter(fieldName)) {
-            filteredData.push(data[row]);
-        }
-    }
+    return data.filter(row => filter(row[field]));
+}
 
-    return filteredData;
+function showSignalsBySite(d, signalCheckFunction, plotElementId) {
+    const filteredData = filterData(d, "name", signalCheckFunction);
+    const uniqueSites = getUniqueTopSites(filteredData);
+    const data = [];
+
+    uniqueSites.forEach(siteName => {
+        const x = [];
+        const y = [];
+
+        filteredData.forEach(row => {
+            row.topSites.forEach(site => {
+                if (site.name === siteName) {
+                    x.push(row.name);
+                    y.push(site.count);
+                }
+            });
+        });
+
+        data.push({ x, y, name: siteName, type: 'bar' });
+    });
+
+    Plotly.newPlot(plotElementId, data, defaultStackBarChartLayout(), defaultChartOptions());
 }
 
 function showLoginAndRegistrationBySite(d) {
-
-    var filteredData = filterData(d, "name", isLoginOrRegistrationSignal);
-    var uniqueSites = getUniqueTopSites(filteredData);
-    var data = []
-
-    for (var uniqueSite in uniqueSites) {
-        var x = [];
-        var y = [];
-
-        for (row in filteredData) {
-            for (site in filteredData[row].topSites) {
-                if (filteredData[row].topSites[site].name == uniqueSites[uniqueSite]) {
-                    x.push(filteredData[row].name)
-                    y.push(filteredData[row].topSites[site].count)
-                }
-            }
-        }
-        data.push({'x': x, 'y': y, 'name': uniqueSites[uniqueSite], 'type': 'bar'});
-    }
-
-    Plotly.newPlot('loginAndRegistrationBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
+    showSignalsBySite(d, isLoginOrRegistrationSignal, 'loginAndRegistrationBySite');
 }
 
 function showAnomalySignalsBySite(d) {
-
-    var uniqueSites = getUniqueTopSites(d);
-    var badAnomalyOnly = filterData(d, "name", isBadAnomalySignal);
-    var data = []
-
-    for (var uniqueSite in uniqueSites) {
-        var x = [];
-        var y = [];
-
-        for (row in badAnomalyOnly) {
-            for (site in badAnomalyOnly[row].topSites) {
-                if (badAnomalyOnly[row].topSites[site].name == uniqueSites[uniqueSite]) {
-                    x.push(badAnomalyOnly[row].name)
-                    y.push(badAnomalyOnly[row].topSites[site].count)
-                }
-            }
-        }
-        data.push({'x': x, 'y': y, 'name': uniqueSites[uniqueSite], 'type': 'bar'});
-
-    }
-
-    Plotly.newPlot('anomalySignalsBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
-
+    showSignalsBySite(d, isBadAnomalySignal, 'anomalySignalsBySite');
 }
 
 function showCveAnomalyBySiteChart(d) {
+    showSignalsBySite(d, isCveSignal, 'cveAnomalyBySite');
+}
 
-    var uniqueSites = getUniqueTopSites(d);
-    var cveOnlyData = filterData(d, "name", isCveSignal);
-    var data = []
+function showTopSignalsBySite(d, plotElementId) {
+    const uniqueSites = getUniqueTopSites(d);
+    const data = [];
 
-    for (var uniqueSite in uniqueSites) {
-        var x = [];
-        var y = [];
+    uniqueSites.forEach(siteName => {
+        const x = [];
+        const y = [];
 
-        for (row in cveOnlyData) {
-            for (site in cveOnlyData[row].topSites) {
-                if (cveOnlyData[row].topSites[site].name == uniqueSites[uniqueSite]) {
-                    x.push(cveOnlyData[row].name)
-                    y.push(cveOnlyData[row].topSites[site].count)
+        d.forEach(row => {
+            row.topSites.forEach(site => {
+                if (site.name === siteName) {
+                    x.push(row.name);
+                    y.push(site.count);
                 }
-            }
-        }
-        data.push({'x': x, 'y': y, 'name': uniqueSites[uniqueSite], 'type': 'bar'});
+            });
+        });
 
-    }
+        data.push({ x, y, name: siteName, type: 'bar' });
+    });
 
-    Plotly.newPlot('cveAnomalyBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
-
+    Plotly.newPlot(plotElementId, data, defaultStackBarChartLayout(), defaultChartOptions());
 }
 
 function showTopAttackSignalsBySite(d) {
-
-    var uniqueSites = getUniqueTopSites(d);
-    var data = []
-
-    for (uniqueSite in uniqueSites) {
-        var x = [];
-        var y = [];
-        for (row in d) {
-
-            for (site in d[row].topSites) {
-                if (d[row].topSites[site].name == uniqueSites[uniqueSite]) {
-                    x.push(d[row].name)
-                    y.push(d[row].topSites[site].count)
-                } 
-            }
-
-        }
-        data.push({'x': x, 'y': y, 'name': uniqueSites[uniqueSite], 'type': 'bar'});
-    }
-      
-    Plotly.newPlot('topAttackSignalsBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
-
+    showTopSignalsBySite(d, 'topAttackSignalsBySite');
 }
 
 function showTopFourBlockedChart(d) {
+    const data = [
+        { x: [], y: [], name: 'Blocked', type: 'bar' },
+        { x: [], y: [], name: 'Attack', type: 'bar' },
+        { x: [], y: [], name: 'Flagged', type: 'bar' }
+    ];
 
-    var blocked = {
-        x: [],
-        y: [],
-        name: 'Blocked',
-        type: 'bar'
-    }
-
-    var attack = {
-        x: [],
-        y: [],
-        name: 'Attack',
-        type: 'bar'
-    }
-
-    var flagged = {
-        x: [],
-        y: [],
-        name: 'Flagged',
-        type: 'bar'
-    }
-
-    for (var row in d) {
-        blocked['x'].push(d[row].name);
-        blocked['y'].push(d[row].blockedCount); 
-
-        attack['x'].push(d[row].name);
-        attack['y'].push(d[row].attackCount);
-
-        flagged['x'].push(d[row].name);
-        flagged['y'].push(d[row].flaggedCount);
-    }
-
-    var data = [blocked, attack, flagged];
+    d.forEach(row => {
+        data[0].x.push(row.name);
+        data[0].y.push(row.blockedCount);
+        data[1].x.push(row.name);
+        data[1].y.push(row.attackCount);
+        data[2].x.push(row.name);
+        data[2].y.push(row.flaggedCount);
+    });
 
     Plotly.newPlot('topFourSitesByBlockedRequests', data, defaultGroupBarChartLayout(), defaultChartOptions());
-
 }
 
 function sortAndChop(d, n, p) {
+    // Sort the data array based on the specified property in descending order
+    d.sort((a, b) => b[p] - a[p]);
 
-    d.sort((b, a) => a[p] - b[p]);
-    choppedData = []
-    var counter = 0;
-    if (n > d.length){
-        n = d.length;
-    }
-    while (counter < n) {
-        choppedData.push(d[counter]);
-        counter = counter + 1;
-    }
-    return choppedData;
+    // Slice the sorted array to get the top n elements
+    return d.slice(0, Math.min(n, d.length));
 }
 
-function attackChartDataPrep(d) {
+function attackChartDataPrep(data) {
+    const values = data.map(row => row.requestCount);
+    const labels = data.map(row => row.countryName);
 
-    var v = []
-    var l = []
-
-    for (var row in d) {
-        v.push(d[row].requestCount)
-        l.push(d[row].countryName)
-    }
-
-    return {values: v, labels: l}
-
+    return { values, labels };
 }
 
-function compressAttackData(d) {
-    var compressedAttackData = []
-    var site
-    var siteRow
-    var country
-    var attackRow
-    var attackObject
+function compressAttackData(data) {
+    const compressedAttackData = [];
 
-    for (site in d) {
-        siteRow = d[site];
-        for (country in siteRow.topAttackSources) {
-            
-            attackRow = siteRow.topAttackSources[country];
-
+    for (const siteRow of data) {
+        for (const attackRow of siteRow.topAttackSources) {
             updateRequestCount(compressedAttackData, {
-                "countryCode": attackRow.countryCode,
-                "countryName": attackRow.countryName,
-                "requestCount": attackRow.requestCount,
-                "y": attackRow.requestCount
+                countryCode: attackRow.countryCode,
+                countryName: attackRow.countryName,
+                requestCount: attackRow.requestCount,
+                y: attackRow.requestCount
             });
         }
     }
 
-    // sort attack data by request Count descending
-    compressedAttackData.sort((b, a) => a.requestCount - b.requestCount);
+    // Sort attack data by request count in descending order
+    compressedAttackData.sort((a, b) => b.requestCount - a.requestCount);
     return compressedAttackData;
 }
+
 
 function updateRequestCount(attacks, countryObj) {
     var country
@@ -323,12 +225,24 @@ function updateRequestCount(attacks, countryObj) {
     }
 }
 
-function countryExists(attacks, countryObj) {
-    var country
-    for (country in attacks) {
-        if (attacks[country].countryCode == countryObj.countryCode) {
-            return true;
-        }
+function updateRequestCount(attacks, countryObj) {
+    const existingCountry = attacks.find(country => country.countryCode === countryObj.countryCode);
+
+    if (existingCountry) {
+        // Update existing country's request count
+        existingCountry.requestCount += countryObj.requestCount;
+        existingCountry.y += countryObj.requestCount;
+    } else {
+        // Add new country entry
+        attacks.push({
+            countryCode: countryObj.countryCode,
+            requestCount: countryObj.requestCount,
+            countryName: countryObj.countryName,
+            y: countryObj.requestCount
+        });
     }
-    return false;
+}
+
+function countryExists(attacks, countryObj) {
+    return attacks.some(country => country.countryCode === countryObj.countryCode);
 }
