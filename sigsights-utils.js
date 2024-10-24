@@ -127,7 +127,6 @@ function showLoginAndRegistrationBySite(d) {
     }
 
     Plotly.newPlot('loginAndRegistrationBySite', data, defaultStackBarChartLayout(), defaultChartOptions());
-
 }
 
 function showAnomalySignalsBySite(d) {
