@@ -799,11 +799,13 @@
 
         $("document").ready(function(){
 
-            corp =  "";
+            let corp = prompt("Please enter your corp", "ebay");
+            let apiUser = prompt("Please enter your x-api-user", "");
+            let apiToken = prompt("Please enter your x-api-token", "");
             HEADERS = {
                 "Content-Type": "application/json",
-                "x-api-user": "",
-                "x-api-token": ""
+                "x-api-user": apiUser,
+                "x-api-token": apiToken
             }
             // get timeseries data  
             datenow = Math.floor(Date.now() / 1000);
