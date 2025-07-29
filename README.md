@@ -8,7 +8,7 @@ Requirements
 
 Directions
 1. Open sigsights.html from file in a web browser. CORS protection must be bypassed. Safari seems to work well.
-2. You will be prompted for the corp, the x-api-user, and x-api-token. Please create these in salt ahead of time.
+2. Copy and paste in the dstoken and duo token from a salt browser session. (Alternately, there is commented out code to use a x-api-user and x-api-token headers).
 3. Enjoy!
 
 Contributions
