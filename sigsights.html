@@ -21,7 +21,7 @@
         function defaultChartLayout() {
             return {
                 font: { size: 12 }, // Use 'font' for font size
-                margin: { t: 0, b: 0 } // Fixed duplicate 'b' property
+                margin: { t: 0, b: 20 } // Fixed duplicate 'b' property
             };
         }
 
@@ -40,7 +40,8 @@
         function defaultChartOptions() {
         return {
                 responsive: true, 
-                displayModeBar: false
+                displayModeBar: false,
+                showlegend: true
             };
         }
 
@@ -224,27 +225,6 @@
             return compressedAttackData;
         }
 
-
-        function updateRequestCount(attacks, countryObj) {
-            var country
-            var countryExists = false;
-            for (country in attacks) {
-                if (attacks[country].countryCode == countryObj.countryCode) {
-                    countryExists = true;
-                    attacks[country].requestCount += countryObj.requestCount;
-                    attacks[country].y += countryObj.requestCount;
-                } 
-            }
-            if (countryExists == false) {
-                attacks.push({
-                    "countryCode": countryObj.countryCode,
-                    "requestCount": countryObj.requestCount,
-                    "countryName": countryObj.countryName,
-                    "y": countryObj.requestCount
-                });
-            }
-        }
-
         function updateRequestCount(attacks, countryObj) {
             const existingCountry = attacks.find(country => country.countryCode === countryObj.countryCode);
 
@@ -270,8 +250,8 @@
         function showSiteAttackCharts(attackData) {
             for (const site of Object.keys(attackData)) {
                 const siteData = attackData[site];
-                const chartDiv = siteData.name.replaceAll(".", "") + 'SiteAttackSignalsChart';
-                
+
+                const chartDiv = siteData.name.replace(/\./g, '_') + 'SiteAttackSignalsChart';
                 const data = siteData.topAttackTypes.map(type => ({
                     x: [type.tagName],
                     y: [type.tagCount],
@@ -381,7 +361,6 @@
         }
 
         function siteTopAttackSignals(siteName, siteDisplayName) {
-
             return `
                 <div class="row">
                     <div class="col"></div>
@@ -465,6 +444,8 @@
         }
 
         function siteSuspiciousIps(site, d) {
+            console.log("Sis Ips: ");
+            console.log(d);
             const locator = `#${site}SuspiciousIps`;
             
             let table = `
@@ -612,28 +593,29 @@
         }
 
         function stubSiteData(sites) {
-            sites.forEach(site => {
-                const { name, displayName } = site;
 
+            sites.forEach(function(site) {
+                var modifiedSiteName = site.name.replace(/\./g, '_');
+                console.log(modifiedSiteName);
                 $("#toc-list").append(`
-                    <li id="${name}_li">
-                        <a href="#${name}">${displayName}</a>
+                    <li id="${modifiedSiteName}_li">
+                        <a href="#${modifiedSiteName}">${site.displayName}</a>
                     </li>
                 `);
-
-                createSiteDiv(name, displayName);
-                fetchSiteDetails(corp, name);
+                createSiteDiv(site.name, modifiedSiteName, site.displayName);
+                fetchSiteDetails(corp, modifiedSiteName, site.name);
             });
+
         }
 
-        function fetchSiteDetails(corp, siteName) {
+        function fetchSiteDetails(corp, modifiedSiteName, siteName) {
             $.when(
                 $.ajax({
                     url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/sites/${siteName}/events`,
                     method: "GET",
                     headers: HEADERS
                 }).done(function(response) {
-                    siteEvents(siteName, response);
+                    siteEvents(modifiedSiteName, response);
                 }),
                 $.ajax({
                     url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/sites/${siteName}/suspiciousIPs`,
@@ -662,7 +644,7 @@
 
         function fetchAttackReports(corp, minus90d, datenow) {
             $.ajax({
-                url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/reports/attacks?from=-30d`,
+                url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/reports/attacks?from=-90d`,
                 method: "GET",
                 headers: HEADERS
             }).done(function(response) {
@@ -671,8 +653,10 @@
 
                 const attackData = compressAttackData(response.data);
                 const filteredAttackData = attackData.filter(row => row.countryCode !== 'private');
-                const sitesWithData = response.data.filter(row => row.totalCount > 0);
-                
+                const sitesWithData = response.data.filter(row => row.attackCount > 0);
+                sitesWithData.sort((a, b) => a.displayName.localeCompare(b.displayName));
+                console.log("sitesWithData");
+                console.log(sitesWithData);
                 stubSiteData(sitesWithData);
 
                 $.each(filteredAttackData, function(i, row) {
@@ -728,15 +712,15 @@
             });
         }
 
-        function createSiteDiv(siteName, siteDisplayName) {
-            const siteDiv = `${siteName}_div`;
+        function createSiteDiv(siteName, modifiedSiteName, siteDisplayName) {
+            const siteDiv = `${modifiedSiteName}_div`;
             $("#sites").append(`<div class="row nextsite" id="${siteDiv}"></div>`);
-            $(`#${siteDiv}`).append(siteHeader(siteName, siteDisplayName))
-                            .append(siteTopAttackSignals(siteName, siteDisplayName))
-                            .append(siteEventsStub(siteName))
-                            .append(siteSuspiciousIpsStub(siteName))
-                            .append(siteTopAttackPathsStub(siteName))
-                            .append(siteOutdatedAgentsStub(siteName));
+            $(`#${siteDiv}`).append(siteHeader(modifiedSiteName, siteDisplayName))
+                            .append(siteTopAttackSignals(modifiedSiteName, siteDisplayName))
+                            .append(siteEventsStub(modifiedSiteName))
+                            .append(siteSuspiciousIpsStub(modifiedSiteName))
+                            .append(siteTopAttackPathsStub(modifiedSiteName))
+                            .append(siteOutdatedAgentsStub(modifiedSiteName));
         }
 
         function fetchAllowRules(corp) {
@@ -799,14 +783,18 @@
 
         $("document").ready(function(){
 
-            corp = prompt("Please enter your corp", "ebay");
-            let apiUser = prompt("Please enter your x-api-user", "");
-            let apiToken = prompt("Please enter your x-api-token", "");
+            corp = prompt("Please enter your corp", "sigsci-demos");
+
+            let dstoken =  "c4b84d20-b9ba-444e-8e0e-ef8b05c56851";
+            let duoToken =  "7178910c26cdcfff31b06e4856c125e3a38fb4f3f3cd016819b60a1dcb6f4566";
             HEADERS = {
                 "Content-Type": "application/json",
-                "x-api-user": apiUser,
-                "x-api-token": apiToken
+                "Authorization": `Bearer ${dstoken}`,
+                "_DUO_APER_LOCAL_": duoToken
+                //"x-api-user": apiUser,
+                //"x-api-token": apiToken
             }
+
             // get timeseries data  
             datenow = Math.floor(Date.now() / 1000);
             minus1d = (datenow - (1 * 24 * 60 * 60));
