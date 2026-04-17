@@ -783,14 +783,12 @@
 
         $("document").ready(function(){
 
-            corp = prompt("Please enter your corp", "abercrombie");
+            corp = prompt("Please enter your corp", "");
 
-            let dstoken =  "b0477122-5432-435d-bbfd-0c82b071144a";
-            let duoToken =  "a1f4ca467191b4dd27a289ab0d7e84ccb997d941a94f2343064874e62e8bc954";
             HEADERS = {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${dstoken}`,
-                "_DUO_APER_LOCAL_": duoToken
+                "Authorization": `Bearer 5e3d7324-d723-4c0e-96bf-845c44c98579`,
+                //"_DUO_APER_LOCAL_": duoToken
                 //"x-api-user": apiUser,
                 //"x-api-token": apiToken
             }
