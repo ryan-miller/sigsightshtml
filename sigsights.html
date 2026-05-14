@@ -839,8 +839,8 @@
 
         $("document").ready(function(){
 
-            corp = prompt("Please enter your corp", "hulu");
-            token = prompt("Token", "d6444937-e439-4df9-93dc-08e47f2ed6eb");
+            corp = prompt("Please enter your corp", "");
+            token = prompt("Token", "");
 
             HEADERS = {
                 "Content-Type": "application/json",
@@ -988,9 +988,9 @@
             <div class="row">
                 <div class="col"></div>
                 <div class="col-6">
-                    <h2>Sites with Fail Opens</h2>
+                    <h2>Sites with Fail Opens (Last 7 Days)</h2>
                     <p id="corpFailOpensBySite"></p>
-                    <p>Fastly NGWAF agents are designed to fail open. Fails opens present as an agent code of 0, -1, or -2. Many fail opens are caused by underpowered or overwhelmed agents (-1). However there can other causes.</p>
+                    <p>Fastly NGWAF agents are designed to fail open. Fails opens present as an agent code of 0, -1, or -2. Many fail opens are caused by underpowered or overwhelmed agents (-1). However there can be other causes.</p>
                 </div>
                 <div class="col"></div>
             </div>
