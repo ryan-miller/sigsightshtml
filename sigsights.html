@@ -444,8 +444,7 @@
         }
 
         function siteSuspiciousIps(site, d) {
-            console.log("Sis Ips: ");
-            console.log(d);
+
             const locator = `#${site}SuspiciousIps`;
             
             let table = `
@@ -592,11 +591,70 @@
             });
         }
 
+        function fetchCorpFailOpens(corp) {
+
+            $.ajax({
+                url: `https://dashboard.signalsciences.net/api/v0/corps/${corp}/sites`,
+                method: "GET",
+                headers: HEADERS
+            }).done(function(response) {
+                const sites = response.data.map(data => data.name);
+
+                async function loadSites() {
+                    const results = await Promise.all(
+                        sites.map(async (site) => {
+                            
+                            const response = await fetch(`https://dashboard.signalsciences.net/api/v0/corps/${corp}/sites/${site}/requests?limit=100&page=1&q=from%3A-7d%20agentcode%3A0%20agentcode%3A-1%20agentcode%3A-2`, {
+                                method: "GET",
+                                headers: HEADERS
+                            });
+                            const data = await response.json();
+                            
+                            return {
+                                site,
+                                totalCount: data.totalCount
+                            };
+                        })
+                    );
+
+                    return results
+
+                }
+
+                loadSites().then((combined) => {
+
+                    // sort descending
+                    combined.sort((a, b) => b.totalCount - a.totalCount);
+                    
+                    chartData = [];
+                    xChartData = [];
+                    yChartData = [];
+
+                    combined.forEach((site) => {
+                        if (site.totalCount > 0) { // no sense showing sites without fail opens
+                            xChartData.push(site.site);
+                            yChartData.push(site.totalCount);
+                        }
+                    });
+
+                    chartData.push({
+                        x: xChartData,
+                        y: yChartData,
+                        type: 'bar'
+                    })
+
+                    Plotly.newPlot('corpFailOpensBySite', chartData, defaultStackBarChartLayout(), defaultChartOptions());
+                });
+            })
+
+            
+        }
+
         function stubSiteData(sites) {
 
             sites.forEach(function(site) {
                 var modifiedSiteName = site.name.replace(/\./g, '_');
-                console.log(modifiedSiteName);
+
                 $("#toc-list").append(`
                     <li id="${modifiedSiteName}_li">
                         <a href="#${modifiedSiteName}">${site.displayName}</a>
@@ -655,8 +713,6 @@
                 const filteredAttackData = attackData.filter(row => row.countryCode !== 'private');
                 const sitesWithData = response.data.filter(row => row.attackCount > 0);
                 sitesWithData.sort((a, b) => a.displayName.localeCompare(b.displayName));
-                console.log("sitesWithData");
-                console.log(sitesWithData);
                 stubSiteData(sitesWithData);
 
                 $.each(filteredAttackData, function(i, row) {
@@ -783,8 +839,8 @@
 
         $("document").ready(function(){
 
-            corp = prompt("Please enter your corp", "");
-            token = prompt("Token", "");
+            corp = prompt("Please enter your corp", "hulu");
+            token = prompt("Token", "d6444937-e439-4df9-93dc-08e47f2ed6eb");
 
             HEADERS = {
                 "Content-Type": "application/json",
@@ -803,6 +859,7 @@
             fetchAttackReports(corp, minus90d, datenow);
             fetchUserData(corp);
             fetchAllowRules(corp);
+            fetchCorpFailOpens(corp);
 
         });
             
@@ -924,6 +981,16 @@
                     <h2>Sites with Corp Signals</h2>
                     <p id="corpSignalsBySite"></p>
                     <p>Corp Signals are signals created by individual users that have access to the Next-Gen WAF. These custom signals can be used in a Request Rule to identify requests with request header or body values.</p>
+                </div>
+                <div class="col"></div>
+            </div>
+
+            <div class="row">
+                <div class="col"></div>
+                <div class="col-6">
+                    <h2>Sites with Fail Opens</h2>
+                    <p id="corpFailOpensBySite"></p>
+                    <p>Fastly NGWAF agents are designed to fail open. Fails opens present as an agent code of 0, -1, or -2. Many fail opens are caused by underpowered or overwhelmed agents (-1). However there can other causes.</p>
                 </div>
                 <div class="col"></div>
             </div>
