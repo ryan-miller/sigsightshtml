@@ -7,9 +7,11 @@ Requirements
 4. Just a web browser and api token.
 
 Directions
-1. Open sigsights.html from file in a web browser. CORS protection must be bypassed. Safari seems to work well.
-2. Copy and paste in the dstoken and duo token from a salt browser session (lines ~788/789). (Alternately, there is commented out code to use a x-api-user and x-api-token headers).
-3. Enjoy!
+1. Grap the dstoken from a valid https://sigsci-console-internal.secretcdn.net session.
+2. Open sigsights.html from file in a web browser. CORS protection must be bypassed. Safari seems to work well.
+3. When prompted, enter the corp.
+4. When prompted, enter the dstoken.
+5. Enjoy!
 
 Contributions
 1. Please contribute! For code changes, please create a separate branch and a pull request when ready.
