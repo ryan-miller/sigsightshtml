@@ -784,13 +784,11 @@
         $("document").ready(function(){
 
             corp = prompt("Please enter your corp", "");
+            token = prompt("Token", "");
 
             HEADERS = {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer 5e3d7324-d723-4c0e-96bf-845c44c98579`,
-                //"_DUO_APER_LOCAL_": duoToken
-                //"x-api-user": apiUser,
-                //"x-api-token": apiToken
+                "Authorization": `Bearer ${token}`,
             }
 
             // get timeseries data  
